@@ -18,10 +18,11 @@ We can create a Hadoop MapReduce Job with Spring Data Apache Hadoop by following
 6.SwaggerUI RESTful it.
 
 # References
-============
 
 http://amodernstory.com/2014/09/23/installing-hadoop-on-mac-osx-yosemite/
 
 http://www.petrikainulainen.net/programming/apache-hadoop/creating-hadoop-mapreduce-job-with-spring-data-apache-hadoop/
 
 https://github.com/yangboz/spring-data-apache-hadoop-examples/tree/master/mapreduce
+
+http://noushinb.blogspot.com/2013/04/reading-writing-hadoop-sequence-files.html
