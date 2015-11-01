@@ -5,6 +5,8 @@ We can create a Hadoop MapReduce Job with Spring Data Apache Hadoop by following
 
 0.brew install hadoop
 
+http://ericlondon.com/2014/08/01/hadoop-pig-ruby-map-reduce-on-osx-via-homebrew.html
+
 1.Get the required dependencies by using Maven.
 
 2.Create the mapper component.
