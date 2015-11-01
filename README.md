@@ -28,3 +28,5 @@ http://www.petrikainulainen.net/programming/apache-hadoop/creating-hadoop-mapred
 https://github.com/yangboz/spring-data-apache-hadoop-examples/tree/master/mapreduce
 
 http://noushinb.blogspot.com/2013/04/reading-writing-hadoop-sequence-files.html
+
+http://hipi.cs.virginia.edu/gettingstarted.html
