@@ -1,8 +1,9 @@
 package info.smartkit.eip.hadoop.hipi;
 
-import hipi.image.FloatImage;
+import org.hipi.image.FloatImage;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.hipi.image.HipiImageHeader;
 
 import java.io.IOException;
 
