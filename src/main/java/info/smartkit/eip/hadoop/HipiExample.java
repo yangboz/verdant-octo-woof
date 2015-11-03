@@ -54,8 +54,10 @@ public class HipiExample extends Configured implements Tool {
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(Text.class);
         // Set the input and output paths on the HDFS
-        FileInputFormat.setInputPaths(jobConf, new Path(this.args[0]));
-        FileOutputFormat.setOutputPath(jobConf, new Path(this.args[1]));
+//        FileInputFormat.setInputPaths(jobConf, new Path(strings[0]));
+        FileInputFormat.setInputPaths(jobConf, strings[0]);
+        FileOutputFormat.setOutputPath(jobConf, new Path(strings[1]));
+        //
         // Execute the MapReduce job and block until it complets
         boolean success = job.waitForCompletion(true);
         // Return success or failure
@@ -63,7 +65,7 @@ public class HipiExample extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        String[] innerArgs = new String[]{"~/SampleImages/", "~/SampleImages/output"};
+        String[] innerArgs = new String[]{"/Users/yangboz/SampleImages/", "/output"};
         ToolRunner.run(new HipiExample(innerArgs), innerArgs);
         System.exit(0);
     }
