@@ -2,24 +2,32 @@ package info.smartkit.eip.hadoop.controllers;
 
 import com.wordnik.swagger.annotations.ApiOperation;
 import info.smartkit.eip.hadoop.dto.HibImportDto;
+import info.smartkit.eip.hadoop.dto.HibInfoDto;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.hipi.image.HipiImageHeader;
+import org.hipi.image.*;
 import org.hipi.imagebundle.HipiImageBundle;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import javax.validation.Valid;
 import javax.ws.rs.core.MediaType;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Created by yangboz on 11/4/15.
@@ -66,7 +74,8 @@ public class HipiController {
     @RequestMapping(value = "import", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON)
     @ApiOperation(httpMethod = "POST", value = "hibImport creates a HipiImageBundle (HIB) from a folder of images on your local file system."
             , notes = "A HIB is the key input file to the HIPI framework and represents a collection of images stored on the Hadoop Distributed File System (HDFS).")
-    public String hibImport(@RequestBody @Valid HibImportDto hibImportDto) throws IOException {
+    public List<String> hibImport(@RequestBody @Valid HibImportDto hibImportDto) throws IOException {
+        List<String> results = new ArrayList<String>();
         //@see: https://github.com/uvagfx/hipi/blob/release/tools/hibImport/src/main/java/org/hipi/tools/HibImport.java
         String imageDir = hibImportDto.getInput();
         String outputHib = hibImportDto.getOutput();
@@ -104,9 +113,11 @@ public class HipiController {
                     if (suffix.compareTo(".jpg") == 0 || suffix.compareTo(".jpeg") == 0) {
                         hib.addImage(fdis, HipiImageHeader.HipiImageFormat.JPEG, metaData);
                         System.out.println(" ** added: " + fileName);
+                        results.add(" ** added: " + fileName);
                     } else if (suffix.compareTo(".png") == 0) {
                         hib.addImage(fdis, HipiImageHeader.HipiImageFormat.PNG, metaData);
                         System.out.println(" ** added: " + fileName);
+                        results.add(" ** added: " + fileName);
                     }
                 }
             }
@@ -139,9 +150,11 @@ public class HipiController {
                     if (suffix.compareTo(".jpg") == 0 || suffix.compareTo(".jpeg") == 0) {
                         hib.addImage(fis, HipiImageHeader.HipiImageFormat.JPEG, metaData);
                         System.out.println(" ** added: " + fileName);
+                        results.add(" ** added: " + fileName);
                     } else if (suffix.compareTo(".png") == 0) {
                         hib.addImage(fis, HipiImageHeader.HipiImageFormat.PNG, metaData);
                         System.out.println(" ** added: " + fileName);
+                        results.add(" ** added: " + fileName);
                     }
                 }
             }
@@ -151,13 +164,166 @@ public class HipiController {
         }
 
         System.out.println("Created: " + outputHib + " and " + outputHib + ".dat");
-        return "Created: " + outputHib + " and " + outputHib + ".dat";
+        results.add("Created: " + outputHib + " and " + outputHib + ".dat");
+        return results;
     }
 
-    @RequestMapping(value = "info/{id}", method = RequestMethod.GET)
-    @ApiOperation(httpMethod = "GET", value = "The hibInfo tool allows querying basic information about HIBs such as image count, spatial dimensions of individual images, image meta data stored at the time of HIB creation, and image EXIF data. It also allows extracting individual images as a stand-alone JPEG or PNG.")
-    public void hibInfo(@PathVariable("id") long id) {
-        //TODO:
+    @RequestMapping(value = "info", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON)
+    @ApiOperation(httpMethod = "POST", value = "The hibInfo tool allows querying basic information about HIBs such as image count, spatial dimensions of individual images, image meta data stored at the time of HIB creation, and image EXIF data."
+            , notes = "It also allows extracting individual images as a stand-alone JPEG or PNG.")
+    public List<String> hibInfo(@RequestBody @Valid HibInfoDto hibInfoDto) throws IOException {
+        List<String> results = new ArrayList<String>();
+        // Validate input HIB
+        Configuration conf = new Configuration();
+        FileSystem fs = FileSystem.get(conf);
+        String inputHib = hibInfoDto.getInput();
+        if (!fs.exists(new Path(inputHib))) {
+            System.err.println("HIB index file not found: " + inputHib);
+            System.exit(1);
+        }
+        if (!fs.exists(new Path(inputHib + ".dat"))) {
+            System.err.println("HIB data file not found: " + inputHib + ".dat");
+            System.exit(1);
+        }
+        //
+        boolean showExif = hibInfoDto.getShowExif();
+        boolean showMeta = hibInfoDto.getShowMeta();
+
+        System.out.println("Input HIB: " + inputHib);
+        System.out.println("Display meta data: " + (showMeta ? "true" : "false"));
+        System.out.println("Display EXIF data: " + (showExif ? "true" : "false"));
+
+        int imageIndex = -1;
+        String extractImagePath = null;
+        String metaKey = null;
+
+
+        // try to decode image index
+        try {
+            imageIndex = hibInfoDto.getExtract().getIndex();
+        } catch (NumberFormatException ex) {
+            System.err.println("Unrecognized image index: " + imageIndex);
+            usage();
+        }
+
+        extractImagePath = hibInfoDto.getExtract().getFileName();
+        if (extractImagePath == null || extractImagePath.length() == 0) {
+            usage();
+        }
+
+        metaKey = hibInfoDto.getMetaKey();
+        if (metaKey == null || metaKey.length() == 0) {
+            usage();
+        }
+
+        System.out.println("Image index: " + imageIndex);
+        System.out.println("Extract image path: " + (extractImagePath == null ? "none" : extractImagePath));
+        System.out.println("Meta data key: " + (metaKey == null ? "none" : metaKey));
+
+
+        HipiImageBundle hib = null;
+        try {
+            hib = new HipiImageBundle(new Path(inputHib), new Configuration(), HipiImageFactory.getByteImageFactory());
+            hib.openForRead((imageIndex == -1 ? 0 : imageIndex));
+        } catch (Exception ex) {
+            System.err.println(ex.getMessage());
+            ex.printStackTrace();
+            System.exit(0);
+        }
+
+        if (imageIndex == -1) {
+            int count = 0;
+            while (hib.next()) {
+                System.out.println("IMAGE INDEX: " + count);
+                results.add("IMAGE INDEX: " + count);
+                HipiImageHeader header = hib.currentHeader();
+                results.addAll(displayImageHeader(header, showMeta, showExif));
+                count++;
+            }
+            if (imageIndex == -1) {
+                System.out.println(String.format("Found [%d] images.", count));
+            }
+        } else {
+
+            if (!hib.next()) {
+                System.err.println(String.format("Failed to locate image with index [" + imageIndex + "]. Check that HIB contains sufficient number of images."));
+                System.exit(0);
+            }
+
+            HipiImageHeader header = hib.currentHeader();
+            results.addAll(displayImageHeader(header, showMeta, showExif));
+
+            if (extractImagePath != null) {
+
+                String imageExtension = FilenameUtils.getExtension(extractImagePath);
+                if (imageExtension == null) {
+                    System.err.println(String.format("Failed to determine image type based on extension [%s]. Please provide a valid path with complete extension.", extractImagePath));
+                    System.exit(0);
+                }
+
+                ImageOutputStream ios = null;
+                try {
+                    ios = ImageIO.createImageOutputStream(new File(extractImagePath));
+                } catch (IOException ex) {
+                    System.err.println(String.format("Failed to open image file for writing [%s]", extractImagePath));
+                    System.exit(0);
+                }
+                Iterator<ImageWriter> writers = ImageIO.getImageWritersBySuffix(imageExtension);
+                if (writers == null) {
+                    System.err.println(String.format("Failed to locate encoder for image extension [%s]", imageExtension));
+                    System.exit(0);
+                }
+                ImageWriter writer = writers.next();
+                if (writer == null) {
+                    System.err.println(String.format("Failed to locate encoder for image extension [%s]", imageExtension));
+                    System.exit(0);
+                }
+                System.out.println("Using image encoder: " + writer);
+                results.add("Using image encoder: " + writer);
+                writer.setOutput(ios);
+
+                HipiImage image = hib.currentImage();
+
+                int w = image.getWidth();
+                int h = image.getHeight();
+
+                BufferedImage bufferedImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+
+                PixelArray pa = ((RasterImage) image).getPixelArray();
+                int[] rgb = new int[w * h];
+                for (int i = 0; i < w * h; i++) {
+
+                    int r = pa.getElemNonLinSRGB(i * 3 + 0);
+                    int g = pa.getElemNonLinSRGB(i * 3 + 1);
+                    int b = pa.getElemNonLinSRGB(i * 3 + 2);
+
+                    rgb[i] = (r << 16) | (g << 8) | b;
+                }
+                bufferedImage.setRGB(0, 0, w, h, rgb, 0, w);
+
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                IIOImage iioImage = new IIOImage(bufferedImage, null, null);
+                writer.write(null, iioImage, param);
+
+                System.out.println(String.format("Wrote [%s]", extractImagePath));
+                results.add(String.format("Wrote [%s]", extractImagePath));
+            }
+
+            if (metaKey != null) {
+                String metaValue = header.getMetaData(metaKey);
+                if (metaValue == null) {
+                    System.out.println("Meta data key [" + metaKey + "] not found.");
+                } else {
+                    System.out.println(metaKey + ": " + metaValue);
+                    results.add(metaKey + ": " + metaValue);
+                }
+            }
+
+        }
+
+        hib.close();
+        //
+        return results;
     }
 
     @RequestMapping(value = "dump/{id}", method = RequestMethod.GET)
@@ -187,4 +353,37 @@ public class HipiController {
     public void covar(@PathVariable("id") long id) {
         //TODO:
     }
+
+
+    ////
+    private void usage() {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.setWidth(148);
+        formatter.printHelp("hibInfo.jar <input HIB> [--show-exif] [--show-meta] [#index [--extract file.png] [--meta key]]", null);
+        System.exit(0);
+    }
+
+    private List<String> displayImageHeader(HipiImageHeader header, boolean showMeta, boolean showExif) {
+        List<String> results = new ArrayList<>();
+
+        System.out.println(String.format("   %d x %d", header.getWidth(), header.getHeight()));
+        results.add(String.format("   %d x %d", header.getWidth(), header.getHeight()));
+        System.out.println(String.format("   format: %d", header.getStorageFormat().toInteger()));
+        results.add(String.format("   format: %d", header.getStorageFormat().toInteger()));
+
+        if (showMeta) {
+            HashMap<String, String> metaData = header.getAllMetaData();
+            System.out.println("   meta: " + metaData);
+            results.add("   meta: " + metaData);
+        }
+
+        if (showExif) {
+            HashMap<String, String> exifData = header.getAllExifData();
+            System.out.println("   exif: " + exifData);
+            results.add("   exif: " + exifData);
+        }
+
+        return results;
+    }
+
 }
