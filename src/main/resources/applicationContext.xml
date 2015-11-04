@@ -7,7 +7,7 @@
        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
 
     <!-- Configures the properties file. -->
-    <context:property-placeholder location="classpath:application-local.properties"/>
+    <context:property-placeholder location="classpath:application.properties"/>
 
     <!-- Configures Apache Hadoop -->
     <hdp:configuration>

@@ -7,14 +7,14 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-//@PropertySources({@PropertySource(value = "classpath:application-${spring.profiles.active}.properties")})
+
 @SpringBootApplication
 public class App {
 
 //    public static final boolean IBM_JAVA = JAVA_VENDOR_NAME.contains("IBM");
 
     public static void main(String[] args) {
-        ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
+//        ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
         SpringApplication.run(App.class, args);
     }
 }
