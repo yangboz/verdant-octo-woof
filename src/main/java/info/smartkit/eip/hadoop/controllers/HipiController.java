@@ -1,8 +1,12 @@
 package info.smartkit.eip.hadoop.controllers;
 
 import com.wordnik.swagger.annotations.ApiOperation;
+import info.smartkit.eip.hadoop.App;
+import info.smartkit.eip.hadoop.dto.HibDumpDto;
 import info.smartkit.eip.hadoop.dto.HibImportDto;
 import info.smartkit.eip.hadoop.dto.HibInfoDto;
+import info.smartkit.eip.hadoop.hipi.HibDumpMapper;
+import info.smartkit.eip.hadoop.hipi.HibDumpReducer;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -10,8 +14,15 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapreduce.Job;
 import org.hipi.image.*;
 import org.hipi.imagebundle.HipiImageBundle;
+import org.hipi.imagebundle.mapreduce.HibInputFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -326,11 +337,46 @@ public class HipiController {
         return results;
     }
 
-    @RequestMapping(value = "dump/{id}", method = RequestMethod.GET)
-    @ApiOperation(httpMethod = "GET", value = "Similar to hibInfo, but this is a MapReduce/program that extracts basic information about the images in a HIB."
+    @RequestMapping(value = "dump", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON)
+    @ApiOperation(httpMethod = "POST", value = "Similar to hibInfo, but this is a MapReduce/program that extracts basic information about the images in a HIB."
             , notes = " It does this using multiple parallel map tasks (one mapper for each image in the HIB) and writes this information to a text file on the HDFS in a single reduce task.")
-    public void hibDump(@PathVariable("id") long id) {
-        //TODO:
+    public ResponseEntity<Boolean> hibDump(@RequestBody @Valid HibDumpDto hibDumpDto) throws IOException, ClassNotFoundException, InterruptedException {
+        //
+        List<String> results = new ArrayList<String>();
+        //
+        Configuration conf = new Configuration();//new Configuration();
+        Job job = Job.getInstance(conf, "hibDump");
+        job.setJarByClass(App.class);
+        job.setMapperClass(HibDumpMapper.class);
+        job.setReducerClass(HibDumpReducer.class);
+        //
+        job.setInputFormatClass(HibInputFormat.class);
+        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputValueClass(Text.class);
+        //
+        String inputPath = hibDumpDto.getInput();
+        String outputPath = hibDumpDto.getOutput();
+
+        removeDir(outputPath, conf);
+        //
+        JobConf jobConf = new JobConf(conf, Job.class);
+//        job.getConfiguration().set(FileOutputFormat.);
+        job.getConfiguration().set("mapreduce.input.fileinputformat.inputdir", inputPath);
+        job.getConfiguration().set("mapreduce.output.fileoutputformat.outputdir", outputPath);
+        job.getConfiguration().set("fs.hdfs.impl",
+                org.apache.hadoop.hdfs.DistributedFileSystem.class.getName()
+        );
+        job.getConfiguration().set("fs.file.impl",
+                org.apache.hadoop.fs.LocalFileSystem.class.getName()
+        );
+        jobConf.setJobName("HipiJobConf");
+        //
+        FileInputFormat.setInputPaths(jobConf, new Path(inputPath));
+        FileOutputFormat.setOutputPath(jobConf, new Path(outputPath));
+
+        job.setNumReduceTasks(1);
+
+        return job.waitForCompletion(true) ? new ResponseEntity<Boolean>(Boolean.FALSE, HttpStatus.EXPECTATION_FAILED) : new ResponseEntity<Boolean>(Boolean.TRUE, HttpStatus.OK);
     }
 
     @RequestMapping(value = "download/{id}", method = RequestMethod.GET)
@@ -384,6 +430,14 @@ public class HipiController {
         }
 
         return results;
+    }
+
+    private void removeDir(String path, Configuration conf) throws IOException {
+        Path output_path = new Path(path);
+        FileSystem fs = FileSystem.get(conf);
+        if (fs.exists(output_path)) {
+            fs.delete(output_path, true);
+        }
     }
 
 }
