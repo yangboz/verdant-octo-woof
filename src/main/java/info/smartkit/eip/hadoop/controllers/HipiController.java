@@ -2,11 +2,11 @@ package info.smartkit.eip.hadoop.controllers;
 
 import com.wordnik.swagger.annotations.ApiOperation;
 import info.smartkit.eip.hadoop.App;
+import info.smartkit.eip.hadoop.dto.HibDownloadDto;
 import info.smartkit.eip.hadoop.dto.HibDumpDto;
 import info.smartkit.eip.hadoop.dto.HibImportDto;
 import info.smartkit.eip.hadoop.dto.HibInfoDto;
-import info.smartkit.eip.hadoop.hipi.HibDumpMapper;
-import info.smartkit.eip.hadoop.hipi.HibDumpReducer;
+import info.smartkit.eip.hadoop.hipi.*;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -14,8 +14,11 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobConf;
@@ -35,9 +38,7 @@ import javax.imageio.stream.ImageOutputStream;
 import javax.validation.Valid;
 import javax.ws.rs.core.MediaType;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -379,11 +380,151 @@ public class HipiController {
         return job.waitForCompletion(true) ? new ResponseEntity<Boolean>(Boolean.FALSE, HttpStatus.EXPECTATION_FAILED) : new ResponseEntity<Boolean>(Boolean.TRUE, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "download/{id}", method = RequestMethod.GET)
-    @ApiOperation(httpMethod = "GET", value = "This is a MapReduce/HIPI program that creates a HIB from a set of images located on the Internet."
+    @RequestMapping(value = "download", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON)
+    @ApiOperation(httpMethod = "POST", value = "This is a MapReduce/HIPI program that creates a HIB from a set of images located on the Internet."
             , notes = " This program highlights some of the more subtle parts of HIPI and the Hadoop framework and will be a valuable tool for creating inputs. It is also designed to work seamlessly with the Yahoo/Flickr 100M Creative Commons research dataset.")
-    public void hibDownload(@PathVariable("id") long id) {
-        //TODO:
+    public ResponseEntity<Boolean> hibDownload(@RequestBody @Valid HibDownloadDto hibDownloadDto) throws IOException, ClassNotFoundException, InterruptedException {
+        //
+        String inputDir = hibDownloadDto.getInput();
+        String outputHib = hibDownloadDto.getOutput();
+
+        boolean yfcc100m = hibDownloadDto.getFormat().equals("yfcc100m");
+        int numDownloadNodes = (yfcc100m ? 1 : hibDownloadDto.getNumOfNodes());
+        if (numDownloadNodes < 1) {
+            System.err.println("Invalid number of download nodes specified [" + numDownloadNodes + "]");
+            System.exit(1);
+        }
+
+        boolean overwrite = hibDownloadDto.getForce();
+
+        System.out.println("Source directory: " + inputDir);
+        System.out.println("Output HIB: " + outputHib);
+        System.out.println("Overwrite output HIB if it exists: " + (overwrite ? "true" : "false"));
+        System.out.println("YFCC100M format: " + (yfcc100m ? "true" : "false"));
+        System.out.println("Number of download nodes: " + numDownloadNodes);
+
+        Configuration conf = new Configuration();
+        FileSystem fs = FileSystem.get(conf);
+
+        // Remove existing HIB if overwrite is specified and HIB exists
+        if (!overwrite) {
+            if (fs.exists(new Path(outputHib))) {
+                System.err.println("HIB [" + outputHib + "] already exists. Use the \"--force\" argument to overwrite.");
+                System.exit(1);
+            }
+        } else { // overwrite
+            if (fs.exists(new Path(outputHib))) {
+                System.out.println("Found that output HIB already exists, deleting.");
+            }
+        }
+
+        fs.delete(new Path(outputHib), true);
+        fs.delete(new Path(outputHib + ".dat"), true);
+        fs.delete(new Path(outputHib + "_output"), true);
+
+        // Scan source directory for list of input files
+        FileStatus[] inputFiles = fs.listStatus(new Path(inputDir));
+        if (inputFiles == null || inputFiles.length == 0) {
+            System.err.println("Failed to find any files in source directory: " + inputDir);
+            System.exit(1);
+        }
+
+        // Validate list of input files
+        ArrayList<Path> sourceFiles = new ArrayList<Path>();
+        for (FileStatus file : inputFiles) {
+
+            Path path = file.getPath();
+
+            if (yfcc100m) {
+                String[] tokens = path.getName().split("-");
+                if (tokens == null || tokens.length == 0) {
+                    System.out.println("  Skipping source file (does not follow YFCC100M file name convention): " + file.getPath());
+                    continue;
+                }
+            }
+
+            try {
+                // If it exists, get the relevant compression codec
+                CompressionCodecFactory codecFactory = new CompressionCodecFactory(conf);
+                CompressionCodec codec = codecFactory.getCodec(path);
+
+                FSDataInputStream fis = fs.open(path);
+
+                // If the codec was found, use it to create an decompressed input stream.
+                // Otherwise, assume input stream is already decompressed
+                BufferedReader reader = null;
+                if (codec != null) {
+                    reader = new BufferedReader(new InputStreamReader(codec.createInputStream(fis)));
+                } else {
+                    reader = new BufferedReader(new InputStreamReader(fis));
+                }
+
+                String fileLine = reader.readLine();
+                String[] lineFields = (yfcc100m ? fileLine.split("\t") : fileLine.split("\\s+"));
+
+                if (yfcc100m) {
+                    if (lineFields.length != 23) {
+                        System.out.println("  Skipping source file (does not follow YFCC100M source file format): " + file.getPath());
+                        String imageUri = null;
+                    } else {
+                        System.out.println("  Adding source file: " + file.getPath());
+                        sourceFiles.add(path);
+                    }
+                } else {
+                    if (lineFields.length != 1) {
+                        System.out.println("  Skipping source file (contains multiple fields per line where only one is expected): " + file.getPath());
+                        if (lineFields.length == 23) {
+                            System.out.println("  Did you mean to use \"--yfcc100m\"?");
+                        }
+                        String imageUri = null;
+                    } else {
+                        System.out.println("  Adding source file: " + file.getPath());
+                        sourceFiles.add(path);
+                    }
+                }
+                fis.close();
+                reader = null;
+            } catch (Exception e) {
+                System.err.println("Skipping source file (unable to open and parse first line: " + file.getPath());
+                continue;
+            }
+
+        }
+
+        if (sourceFiles.size() == 0) {
+            System.err.println("Failed to find any valid files in source directory: " + inputDir);
+            System.exit(1);
+        }
+
+        // Construct path to directory containing outputHib
+        String outputPath = outputHib.substring(0, outputHib.lastIndexOf('/') + 1);
+
+        // Attaching job parameters to global Configuration object
+        conf.setInt("downloader.nodes", numDownloadNodes);
+        conf.setStrings("downloader.outfile", outputHib);
+        conf.setStrings("downloader.outpath", outputPath);
+        conf.setBoolean("downloader.yfcc100m", yfcc100m);
+
+        Job job = Job.getInstance(conf, "hibDownload");
+        job.setJarByClass(App.class);
+        job.setMapperClass(DownloaderMapper.class);
+        job.setReducerClass(DownloaderReducer.class);
+        job.setInputFormatClass(DownloaderInputFormat.class);
+        job.setOutputKeyClass(BooleanWritable.class);
+        job.setOutputValueClass(Text.class);
+        job.setNumReduceTasks(1);
+        //
+        JobConf jobConf = new JobConf(conf, Job.class);
+        jobConf.setJobName("hibDownloadConf");
+        //
+//        FileOutputFormat.setOutputPath(job, new Path(outputHib + "_output"));
+        FileOutputFormat.setOutputPath(jobConf, new Path(outputHib + "_output"));
+
+        Path[] inputPaths = new Path[sourceFiles.size()];
+        inputPaths = sourceFiles.toArray(inputPaths);
+        DownloaderInputFormat.setInputPaths(job, inputPaths);
+
+        return job.waitForCompletion(true) ? new ResponseEntity<Boolean>(Boolean.FALSE, HttpStatus.EXPECTATION_FAILED) : new ResponseEntity<Boolean>(Boolean.TRUE, HttpStatus.OK);
     }
 
     @RequestMapping(value = "toJpeg/{id}", method = RequestMethod.GET)
