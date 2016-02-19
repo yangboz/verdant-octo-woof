@@ -1,22 +1,20 @@
 package info.smartkit.eip.hadoop;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.JobConf;
-import org.hipi.image.FloatImage;
 import info.smartkit.eip.hadoop.hipi.HelloWorldMapper;
 import info.smartkit.eip.hadoop.hipi.HelloWorldReducer;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.hipi.image.FloatImage;
 import org.hipi.imagebundle.mapreduce.HibInputFormat;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Created by yangboz on 11/1/15.
@@ -29,6 +27,12 @@ public class HipiExample extends Configured implements Tool {
         args = args;
         //Configuration testing
 //        ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
+    }
+
+    public static void main(String[] args) throws Exception {
+        String[] innerArgs = new String[]{"file:////Users/yangboz/SampleImages/SampleImages.hib", "file:////Users/yangboz/SampleImages/output/"};
+        ToolRunner.run(new HipiExample(innerArgs), innerArgs);
+        System.exit(0);
     }
 
     @Override
@@ -77,11 +81,5 @@ public class HipiExample extends Configured implements Tool {
         boolean success = job.waitForCompletion(true);
         // Return success or failure
         return success ? 0 : 1;
-    }
-
-    public static void main(String[] args) throws Exception {
-        String[] innerArgs = new String[]{"file:////Users/yangboz/SampleImages/SampleImages.hib", "file:////Users/yangboz/SampleImages/output/"};
-        ToolRunner.run(new HipiExample(innerArgs), innerArgs);
-        System.exit(0);
     }
 }

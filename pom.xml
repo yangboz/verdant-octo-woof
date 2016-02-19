@@ -18,7 +18,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!--
         <start-class>info.smartkit.eip.hadoop.App</start-class>
+        -->
+        <start-class>info.smartkit.eip.hadoop.SampleProgram</start-class>
         <java.version>1.8</java.version>
     </properties>
 
@@ -64,7 +67,10 @@
         <dependency>
             <groupId>org.hipi</groupId>
             <artifactId>hipi</artifactId>
-            <version>2.1.0.RELEASE</version>
+            <version>2.1.0</version>
+            <type>jar</type>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/hipi-2.1.0.jar</systemPath>
         </dependency>
 
         <dependency>
@@ -137,6 +143,10 @@
             <id>oss-jfrog-artifactory</id>
             <name>oss-jfrog-artifactory-releases</name>
             <url>http://oss.jfrog.org/artifactory/oss-release-local</url>
+        </repository>
+        <repository>
+            <id>apache.snapshots</id>
+            <url>http://repository.apache.org/snapshots/</url>
         </repository>
     </repositories>
 
