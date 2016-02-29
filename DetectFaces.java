@@ -23,7 +23,7 @@ public class DetectFaces {
 
        // Create a face detector from the cascade file in the resources
        // directory.
-       String xmlPath = "/home/cloudera/project/opencv-examples/lbpcascade_frontalface.xml";
+       String xmlPath = "/Volumes/Transcend/opencv-2.4.11/data/lbpcascades/lbpcascade_frontalface.xml";
        System.out.println(xmlPath);
        CascadeClassifier faceDetector = new CascadeClassifier(xmlPath);
        Mat image = Highgui.imread(imageFile);

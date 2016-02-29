@@ -21,7 +21,11 @@ http://amodernstory.com/2014/09/23/installing-hadoop-on-mac-osx-yosemite/
 
 6.SwaggerUI RESTful it.
 
-7.Image processing using OpenCV on Hadoop: http://dinesh-malav.blogspot.com/2015/05/image-processing-using-opencv-on-hadoop.html
+7.Image processing using OpenCV on Hadoop: 
+
+http://dinesh-malav.blogspot.com/2015/05/image-processing-using-opencv-on-hadoop.html
+
+https://github.com/GopiKrishnan-V/hipi-hadoop
 
 # References
 
