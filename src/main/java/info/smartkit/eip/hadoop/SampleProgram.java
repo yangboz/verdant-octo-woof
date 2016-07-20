@@ -26,6 +26,13 @@ public class SampleProgram extends Configured implements Tool {
 
 
     public static void main(String[] args) throws Exception {
+        //set HADOOP_HOME
+        System.setProperty("hadoop.home.dir", "/");
+        //default args
+        if(args.length==0)
+        {
+            args = new String[]{"/Users/smartkit/SampleImages","/Users/smartkit/output"};
+        }
         ToolRunner.run(new SampleProgram(), args);
         System.exit(0);
     }
