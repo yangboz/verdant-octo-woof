@@ -1,5 +1,5 @@
 # verdant-octo-woof
-Spring-boot+Hadoop+SwaggerUI RESTful.
+Spring-boot+SwaggerUI RESTful for Image processing using OpenCV on Hadoop using HIPI.
 
 We can create a Hadoop MapReduce Job with Spring Data Apache Hadoop by following these steps:
 
