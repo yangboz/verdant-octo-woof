@@ -106,6 +106,7 @@
     <orderEntry type="library" name="Maven: jline:jline:0.9.94" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty:3.7.0.Final" level="project" />
     <orderEntry type="library" name="Maven: org.apache.curator:curator-framework:2.7.1" level="project" />
+    <orderEntry type="library" name="Maven: nu.pattern:opencv:2.4.9-7" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hadoop:hadoop-common:2.7.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.hadoop:hadoop-annotations:2.7.1" level="project" />
     <orderEntry type="module-library">

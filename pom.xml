@@ -56,6 +56,12 @@
             <artifactId>hadoop-auth</artifactId>
             <version>2.7.1</version>
         </dependency>
+        <!-- OpenCV -->
+        <dependency>
+            <groupId>nu.pattern</groupId>
+            <artifactId>opencv</artifactId>
+            <version>2.4.9-7</version>
+        </dependency>
 
         <!-- HIPI -->
         <dependency>

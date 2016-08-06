@@ -30,7 +30,7 @@ public class HipiExample extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        String[] innerArgs = new String[]{"file:////Users/yangboz/SampleImages/SampleImages.hib", "file:////Users/yangboz/SampleImages/output/"};
+        String[] innerArgs = new String[]{"file:////Users/smartkit/SampleImages/sample.hib", "file:////Users/yangboz/SampleImages/output/"};
         ToolRunner.run(new HipiExample(innerArgs), innerArgs);
         System.exit(0);
     }

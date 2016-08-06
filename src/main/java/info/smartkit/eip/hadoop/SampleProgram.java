@@ -31,7 +31,7 @@ public class SampleProgram extends Configured implements Tool {
         //default args
         if(args.length==0)
         {
-            args = new String[]{"/Users/smartkit/SampleImages","/Users/smartkit/output"};
+            args = new String[]{"hdfs://localhost:9000/user/smartkit/sample.hib","hdfs://localhost:9000/user/smartkit/output"};
         }
         ToolRunner.run(new SampleProgram(), args);
         System.exit(0);
