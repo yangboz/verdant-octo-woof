@@ -1,13 +1,19 @@
 # verdant-octo-woof
-Spring-boot+Hadoop+SwaggerUI RESTful.
+Spring-boot+SwaggerUI RESTful for Image processing using OpenCV on Hadoop using HIPI.
 
 We can create a Hadoop MapReduce Job with Spring Data Apache Hadoop by following these steps:
 
-0.brew install hadoop
+0.Homebrew install hadoop
 
 http://ericlondon.com/2014/08/01/hadoop-pig-ruby-map-reduce-on-osx-via-homebrew.html
 
 http://amodernstory.com/2014/09/23/installing-hadoop-on-mac-osx-yosemite/
+
+1.Homebrew install open-cv with java
+
+brew tap homebrew/science
+
+brew install opencv --with-java
 
 1.Get the required dependencies by using Maven.
 
