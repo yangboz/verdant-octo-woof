@@ -3,6 +3,9 @@ package info.smartkit.eip.hadoop;
 //import hipi.image.FloatImage;
 //import hipi.image.ImageHeader;
 //import hipi.imagebundle.mapreduce.ImageBundleInputFormat;
+import org.hipi.image.FloatImage;
+import org.hipi.image.HipiImageHeader;
+import org.hipi.imagebundle.mapreduce.HibInputFormat;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -15,9 +18,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.hipi.image.FloatImage;
-import org.hipi.image.HipiImageHeader;
-import org.hipi.imagebundle.mapreduce.HibInputFormat;
+
 
 import java.io.IOException;
 

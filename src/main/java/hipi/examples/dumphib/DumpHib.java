@@ -33,19 +33,26 @@ import org.apache.hadoop.util.Tool;
  
 import org.apache.hadoop.util.ToolRunner;
 
-import hipi.image.FloatImage;
-import hipi.image.ImageHeader;
-import hipi.image.io.JPEGImageUtil;
-import hipi.image.io.PPMImageUtil;
-import hipi.imagebundle.mapreduce.ImageBundleInputFormat;
-import hipi.util.ByteUtils;
+//import hipi.image.FloatImage;
+//import hipi.image.ImageHeader;
+//import hipi.image.io.JPEGImageUtil;
+//import hipi.image.io.PPMImageUtil;
+//import hipi.imagebundle.mapreduce.ImageBundleInputFormat;
+import org.hipi.imagebundle.mapreduce.HibInputFormat;
+//import hipi.util.ByteUtils;
+import org.hipi.util.ByteUtils;
+import org.hipi.image.FloatImage;
+import org.hipi.image.HipiImageHeader;
+import org.hipi.imagebundle.mapreduce.HibInputFormat;
+import org.hipi.image.io.JpegCodec;
+import org.hipi.image.io.ImageEncoder;
 
 public class DumpHib extends Configured implements Tool {
 
 	/**
 	 * Mapper class for detecting face in the images available in the HIPI Bundle
 	 */
-	public static class DumpHibMapper extends Mapper<ImageHeader, FloatImage, IntWritable, Text> {
+	public static class DumpHibMapper extends Mapper<HipiImageHeader, FloatImage, IntWritable, Text> {
 		private static Configuration conf;
 		
 		public void setup(Context context) throws IOException
@@ -55,7 +62,7 @@ public class DumpHib extends Configured implements Tool {
 		}
 		
 		@Override
-		public void map(ImageHeader key, FloatImage value, Context context)
+		public void map(HipiImageHeader key, FloatImage value, Context context)
 		throws IOException, InterruptedException {
 			if (value != null) {
 				String localFilePath = conf.get("local.file.path");
@@ -64,7 +71,8 @@ public class DumpHib extends Configured implements Tool {
 				
 				File file = new File(localFilePath.toString()+"imwf/"+randomFile+".jpg");
 				OutputStream os = new FileOutputStream(file);
-				JPEGImageUtil.getInstance().encodeImage(value, key, os);
+//				JPEGImageUtil.getInstance().encodeImage(value, key, os);
+				JpegCodec.getInstance().encodeImage(value, key, os);
 				
 				Mat matImage = Highgui.imread(file.getAbsolutePath());
 				MatOfRect faceDetections = new MatOfRect();
@@ -79,7 +87,7 @@ public class DumpHib extends Configured implements Tool {
 				int imageWidth = value.getWidth();
 				int imageHeight = value.getHeight();
 				
-				String hexHash = ByteUtils.asHex(ByteUtils.FloatArraytoByteArray(value.getData()));
+				String hexHash = ByteUtils.asHex(ByteUtils.floatArrayToByteArray(value.getData()));
 				/// It will write the image information for reducer
 				if(totalFaces > 0){ //(mageWidth > 540 && imageHeight > 300)
 					String output = imageWidth + "x" + imageHeight + "\t(" + hexHash + ")\t	" + randomFile+".jpg";
@@ -127,7 +135,7 @@ public class DumpHib extends Configured implements Tool {
 		// Set formats
 		job.setOutputKeyClass(IntWritable.class);
 		job.setOutputValueClass(Text.class);
-		job.setInputFormatClass(ImageBundleInputFormat.class);
+		job.setInputFormatClass(HibInputFormat.class);
 		File file = new File(localFilePath);
 		delete(file);
 		// Set out/in paths
