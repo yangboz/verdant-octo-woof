@@ -76,7 +76,7 @@
                     <version>2.1.0</version>
                     <type>jar</type>
                     <scope>system</scope>
-                    <systemPath>${project.basedir}/libs/hipi-2.1.0.jar</systemPath>
+                    <systemPath>${project.basedir}/libs/hipi-2.1.0-snapshot.jar</systemPath>
                 </dependency>
 <!--
         <dependency>

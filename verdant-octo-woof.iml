@@ -162,7 +162,7 @@
     <orderEntry type="module-library">
       <library name="Maven: org.hipi:hipi:2.1.0">
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/libs/hipi-2.1.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/libs/hipi-2.1.0-snapshot.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
