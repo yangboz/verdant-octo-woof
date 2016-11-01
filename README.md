@@ -29,6 +29,24 @@ brew install opencv --with-java
 
 ##7.Image processing using OpenCV on Hadoop: 
 
+###Mapper:
+
+    1.Load OpenCV native library
+    2.Create CascadeClassifier
+    3.onvert HIPI FloatImage to OpenCV Mat
+    4.Detect and count faces in the image
+    5.Write number of faces detected to context
+
+
+
+###Reducer:
+
+    1.Count number of files processed
+    2.Count number of faces detected
+    3.Output number of files and faces detected
+
+
+
 http://dinesh-malav.blogspot.com/2015/05/image-processing-using-opencv-on-hadoop.html
 
 https://github.com/GopiKrishnan-V/hipi-hadoop
